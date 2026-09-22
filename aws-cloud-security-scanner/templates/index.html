@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AWS Cloud Security Misconfiguration Scanner</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="container nav-content">
+      <div class="brand">
+        <span class="brand-icon">🛡️</span>
+        <div>
+          <h1 class="brand-title">AWS Cloud Security Scanner</h1>
+          <p class="brand-subtitle">Automated Read-Only Misconfiguration Assessment</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="badge badge-info">Read-Only Mode</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container main-content">
+
+    <!-- Scan Controls Card -->
+    <section class="card controls-card">
+      <div class="card-header">
+        <h2>Scan Configuration</h2>
+        <span class="text-muted">Target AWS Region</span>
+      </div>
+      <div class="controls-grid">
+        <div class="form-group">
+          <label for="regionSelect">Target AWS Region:</label>
+          <select id="regionSelect" class="form-control">
+            <option value="ap-south-1" selected>ap-south-1 (Asia Pacific - Mumbai)</option>
+            <option value="us-east-1">us-east-1 (US East - N. Virginia)</option>
+            <option value="us-east-2">us-east-2 (US East - Ohio)</option>
+            <option value="us-west-1">us-west-1 (US West - N. California)</option>
+            <option value="us-west-2">us-west-2 (US West - Oregon)</option>
+            <option value="eu-west-1">eu-west-1 (Europe - Ireland)</option>
+            <option value="eu-central-1">eu-central-1 (Europe - Frankfurt)</option>
+            <option value="ap-southeast-1">ap-southeast-1 (Asia Pacific - Singapore)</option>
+          </select>
+        </div>
+
+        <div class="form-actions">
+          <button id="runScanBtn" class="btn btn-primary">
+            <span class="btn-icon">▶</span> Run Security Scan
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Error / Status Notice (Hidden by default) -->
+    <div id="statusAlert" class="alert d-none">
+      <div id="statusMessage"></div>
+    </div>
+
+    <!-- Results Section (Hidden until scan runs) -->
+    <div id="resultsWrapper" class="d-none">
+
+      <!-- Executive Overview -->
+      <section class="overview-grid">
+        
+        <!-- Score Card -->
+        <div class="card score-card">
+          <div class="score-header">
+            <span class="text-muted">Security Score</span>
+            <span id="scoreStatusBadge" class="status-pill status-moderate">MODERATE</span>
+          </div>
+          <div class="score-display">
+            <span id="scoreValue" class="score-number">80</span>
+            <span class="score-total">/ 100</span>
+          </div>
+          <div class="score-meta">
+            <div>Account: <strong id="metaAccount">-</strong></div>
+            <div>Region: <strong id="metaRegion">-</strong></div>
+          </div>
+        </div>
+
+        <!-- Severity Counters -->
+        <div class="card counts-card">
+          <h3>Findings by Severity</h3>
+          <div class="severity-grid">
+            <div class="severity-box sev-critical">
+              <span class="sev-label">Critical</span>
+              <span id="countCritical" class="sev-val">0</span>
+            </div>
+            <div class="severity-box sev-high">
+              <span class="sev-label">High</span>
+              <span id="countHigh" class="sev-val">0</span>
+            </div>
+            <div class="severity-box sev-medium">
+              <span class="sev-label">Medium</span>
+              <span id="countMedium" class="sev-val">0</span>
+            </div>
+            <div class="severity-box sev-low">
+              <span class="sev-label">Low</span>
+              <span id="countLow" class="sev-val">0</span>
+            </div>
+          </div>
+          <div class="total-risk-bar">
+            <span>Cumulative Risk Points: <strong id="totalRiskPoints">0</strong></span>
+            <span>Total Findings: <strong id="totalFindingsCount">0</strong></span>
+          </div>
+        </div>
+
+        <!-- Resources Audited -->
+        <div class="card resources-card">
+          <h3>Resources Audited</h3>
+          <ul class="resource-list">
+            <li>
+              <span>🪣 S3 Buckets</span>
+              <strong id="resBuckets">0</strong>
+            </li>
+            <li>
+              <span>👤 IAM Users</span>
+              <strong id="resUsers">0</strong>
+            </li>
+            <li>
+              <span>💻 EC2 Instances</span>
+              <strong id="resInstances">0</strong>
+            </li>
+            <li>
+              <span>🔒 Security Groups</span>
+              <strong id="resSecurityGroups">0</strong>
+            </li>
+            <li>
+              <span>📑 CloudTrail Trails</span>
+              <strong id="resCloudTrail">Audited</strong>
+            </li>
+          </ul>
+        </div>
+
+      </section>
+
+      <!-- Findings Table & Filters -->
+      <section class="card findings-card">
+        <div class="findings-header">
+          <div>
+            <h2>Detected Security Findings</h2>
+            <p class="text-muted">Identified misconfigurations and recommended remediation actions</p>
+          </div>
+          <div class="export-actions">
+            <a href="/api/export/json" class="btn btn-outline" download>
+              ⬇ Export JSON
+            </a>
+            <a href="/api/export/csv" class="btn btn-outline" download>
+              ⬇ Export CSV
+            </a>
+          </div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="filters-row">
+          <div class="filter-item">
+            <label for="filterSeverity">Severity:</label>
+            <select id="filterSeverity" class="form-control form-control-sm">
+              <option value="ALL">All Severities</option>
+              <option value="CRITICAL">Critical</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+            </select>
+          </div>
+
+          <div class="filter-item">
+            <label for="filterService">Service:</label>
+            <select id="filterService" class="form-control form-control-sm">
+              <option value="ALL">All Services</option>
+              <option value="S3">S3</option>
+              <option value="IAM">IAM</option>
+              <option value="Security Group">Security Group</option>
+              <option value="CloudTrail">CloudTrail</option>
+            </select>
+          </div>
+
+          <div class="filter-item filter-search">
+            <label for="searchQuery">Search:</label>
+            <input type="text" id="searchQuery" class="form-control form-control-sm" placeholder="Filter by resource name or issue...">
+          </div>
+        </div>
+
+        <!-- Table View -->
+        <div class="table-responsive">
+          <table class="table" id="findingsTable">
+            <thead>
+              <tr>
+                <th style="width: 50px;">#</th>
+                <th style="width: 120px;">Service</th>
+                <th style="width: 180px;">Resource</th>
+                <th>Misconfiguration / Finding</th>
+                <th style="width: 100px;">Severity</th>
+                <th style="width: 70px;">Risk</th>
+                <th>Remediation Recommendation</th>
+              </tr>
+            </thead>
+            <tbody id="findingsTableBody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+          <div id="noFindingsMessage" class="no-findings d-none">
+            ✓ No findings match the selected filters.
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- Clean Footer -->
+  <footer class="footer">
+    <div class="container footer-content">
+      <p>AWS Cloud Security Misconfiguration Scanner</p>
+      <p class="text-muted">Automated read-only security compliance and posture evaluation tool.</p>
+    </div>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
